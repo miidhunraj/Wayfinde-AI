@@ -109,7 +109,7 @@ travel_recovery_agent/
 ├── requirements.txt
 ├── README.md
 ├── data/
-│   └── demo_data.json       # created automatically on first run
+│   └── demo_data.json       
 ├── static/
 │   ├── app.js
 │   └── style.css
