@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wayfinder AI — Travel Recovery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">W</div><div><strong>wayfinder<span>ai</span></strong><small>TRAVEL RECOVERY</small></div></div>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav>
+        <a class="nav-item active" href="#overview"><span class="nav-icon">▦</span> Overview</a>
+        <a class="nav-item" href="#bookings"><span class="nav-icon">▤</span> My bookings <span class="nav-count" id="booking-count">4</span></a>
+        <a class="nav-item" href="#disruptions"><span class="nav-icon">⌁</span> Disruptions</a>
+        <a class="nav-item" href="#recovery"><span class="nav-icon">✧</span> Recovery plans</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="help-card"><div class="help-icon">✦</div><strong>Travel changes happen.</strong><p>Let Wayfinder find your next best move.</p><button onclick="scrollToSection('disruptions')" class="text-button">Try a demo <span>↗</span></button></div>
+        <div class="profile"><div class="avatar">AS</div><div><strong>{{ data.traveller.name }}</strong><small>Demo traveller</small></div><span class="profile-dots">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> Overview</div><div class="top-actions"><div class="system-status"><i></i> Demo system online</div><button class="icon-button" title="Notifications">♧<b></b></button><div class="top-avatar">AS</div></div></header>
+      <section id="overview" class="page-heading">
+        <div><div class="eyebrow">YOUR JOURNEY, BACK ON TRACK</div><h1>Good morning, Aarav <span class="wave">✦</span></h1><p>When plans change, we help you find the best way forward.</p></div>
+        <button class="button button-primary" onclick="scrollToSection('disruptions')"><span>＋</span> Simulate disruption</button>
+      </section>
+
+      <section class="stats-grid">
+        <div class="stat-card"><div class="stat-top"><span>Upcoming bookings</span><span class="stat-icon blue">▤</span></div><div class="stat-value" id="stat-bookings">4</div><div class="stat-foot"><span class="status-dot green"></span> Across your journey</div></div>
+        <div class="stat-card"><div class="stat-top"><span>Active disruptions</span><span class="stat-icon amber">⌁</span></div><div class="stat-value" id="stat-disruptions">0</div><div class="stat-foot"><span class="status-dot amber-dot"></span> Requires attention</div></div>
+        <div class="stat-card"><div class="stat-top"><span>Recovery plans</span><span class="stat-icon violet">✧</span></div><div class="stat-value" id="stat-plans">0</div><div class="stat-foot"><span class="status-dot green"></span> AI-assisted proposals</div></div>
+        <div class="stat-card"><div class="stat-top"><span>Extra cost avoided*</span><span class="stat-icon mint">₹</span></div><div class="stat-value" id="stat-savings">₹0</div><div class="stat-foot">*Illustrative demo estimate</div></div>
+      </section>
+
+      <section class="journey-banner">
+        <div class="journey-copy"><div class="banner-kicker"><span class="live-pulse"></span> NEXT JOURNEY</div><h2>Bengaluru <span class="route-arrow">→</span> Mumbai <span class="route-arrow">→</span> Pune</h2><p>Your multi-stop trip is coming up. Wayfinder is ready if anything changes.</p><div class="journey-meta"><span>◷ <b id="journey-date">Upcoming</b></span><span>•</span><span>3 bookings linked</span></div></div>
+        <div class="route-visual"><div class="route-line"></div><div class="route-point p1"><i></i><span>BLR</span></div><div class="route-point p2"><i></i><span>BOM</span></div><div class="route-point p3"><i></i><span>PNQ</span></div><div class="plane">✈</div></div>
+      </section>
+
+      <div class="content-grid">
+        <section id="bookings" class="panel bookings-panel">
+          <div class="panel-heading"><div><h3>Your bookings</h3><p>Connected travel reservations</p></div><button class="subtle-button" onclick="refreshState()">Refresh ↻</button></div>
+          <div class="booking-list" id="booking-list"></div>
+        </section>
+        <section class="panel disruption-panel" id="disruptions">
+          <div class="panel-heading"><div><h3>Disruption simulator</h3><p>Test a real-world travel change</p></div><span class="demo-tag">DEMO MODE</span></div>
+          <form id="disruption-form">
+            <label>Disruption type</label>
+            <div class="type-options">
+              <label class="type-option"><input type="radio" name="type" value="flight" checked><span class="type-symbol">✈</span><span>Flight</span></label>
+              <label class="type-option"><input type="radio" name="type" value="train"><span class="type-symbol">▰</span><span>Train</span></label>
+              <label class="type-option"><input type="radio" name="type" value="hotel"><span class="type-symbol">⌂</span><span>Hotel</span></label>
+            </div>
+            <div class="form-row"><div class="field"><label for="from">Origin</label><select id="from"><option>Bengaluru</option><option>Mumbai</option><option>Chennai</option></select></div><div class="field"><label for="to">Destination</label><select id="to"><option>Mumbai</option><option>Chennai</option><option>Pune</option><option>Goa</option><option>Bengaluru</option></select></div></div>
+            <div class="field" id="city-field" hidden><label for="city">Hotel city</label><select id="city"><option>Pune</option><option>Mumbai</option><option>Goa</option></select></div>
+            <div class="field"><label for="date">Travel date</label><input type="date" id="date" required></div>
+            <div class="field"><label for="reason">What happened?</label><select id="reason"><option value="Delayed">Significant delay</option><option value="Cancelled">Cancellation</option><option value="Overbooked">Overbooked / unavailable</option><option value="Weather">Weather disruption</option><option value="Operational">Operational issue</option></select></div>
+            <button type="submit" class="button button-primary full-button"><span>⌁</span> Detect affected bookings</button>
+            <p class="form-note">Uses sample bookings and simulated disruption data. No live provider connection.</p>
+          </form>
+        </section>
+      </div>
+
+      <section class="panel disruptions-table-panel">
+        <div class="panel-heading"><div><h3>Recent disruptions</h3><p>Detected changes and impacted reservations</p></div><span class="small-muted" id="disruption-total">0 events</span></div>
+        <div id="disruption-list" class="event-list"><div class="empty-state"><div class="empty-symbol">⌁</div><strong>All clear for now</strong><p>Simulate a disruption above to see the recovery workflow.</p></div></div>
+      </section>
+
+      <section id="recovery" class="panel recovery-panel">
+        <div class="panel-heading"><div><h3>Recovery workspace</h3><p>Ranked alternatives and suggested next steps</p></div><span class="ai-pill">✦ AI decision engine</span></div>
+        <div id="recovery-list"><div class="empty-state compact"><div class="empty-symbol">✧</div><strong>Your recovery plan will appear here</strong><p>Detect a disruption, then select “Build recovery plan”.</p></div></div>
+      </section>
+      <footer><span>WAYFINDER AI</span><span>Prototype for PS 4.1 · Travel Disruption Recovery</span><button onclick="resetDemo()">Reset demo data</button></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
