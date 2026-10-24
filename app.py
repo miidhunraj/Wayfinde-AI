@@ -112,40 +112,64 @@ def affected_booking_ids(data, disruption):
 
 
 def ensure_demo_recovery_options(data, booking):
-    """Create clearly simulated options for routes/cities not in the seed catalogue."""
-    matching = [
-        a for a in data["alternatives"]
-        if a.get("type") == booking["type"] and a.get("date") == booking["date"]
-        and ((booking["type"] in ("flight", "train") and a.get("from") == booking.get("from") and a.get("to") == booking.get("to"))
-             or (booking["type"] == "hotel" and a.get("city") == booking.get("city")))
-    ]
-    if matching:
+    """Ensure each disrupted booking has named, same-price illustrative alternatives.
+
+    These catalogue entries are synthetic demo examples, not live schedules,
+    real availability, or offers from the named providers.
+    """
+    def matches(a):
+        if a.get("type") != booking["type"] or a.get("date") != booking["date"]:
+            return False
+        if booking["type"] in ("flight", "train"):
+            return a.get("from") == booking.get("from") and a.get("to") == booking.get("to")
+        return a.get("city") == booking.get("city")
+
+    same_price = [a for a in data["alternatives"] if matches(a) and int(a.get("price", -1)) == int(booking["price"])]
+    if len(same_price) >= 3:
         return
-    if booking["type"] in ("flight", "train"):
-        providers = ["DemoConnect", "SwiftRoute", "ValueWay"]
-        price_offsets = [500, 900, -200]
-        times = [("09:30", "11:30"), ("12:00", "14:00"), ("08:00", "10:00")]
-        for i, provider in enumerate(providers):
-            data["alternatives"].append({
-                "id": "ALT-GEN-" + uuid.uuid4().hex[:6].upper(), "type": booking["type"],
-                "provider": provider, "from": booking["from"], "to": booking["to"],
-                "date": booking["date"], "departure": times[i][0], "arrival": times[i][1],
-                "price": max(300, int(booking["price"]) + price_offsets[i]), "seats": [8, 5, 3][i],
-                "overnight": False, "note": "Simulated alternative generated for this route; not live inventory."
-            })
+
+    if booking["type"] == "flight":
+        examples = [
+            ("Air India (demo option)", "AI-DMO1", "08:20", "10:15", "Direct service · Economy · 1 cabin bag (illustrative details)"),
+            ("IndiGo (demo option)", "6E-DMO2", "09:10", "11:05", "Direct service · Economy · standard baggage (illustrative details)"),
+            ("Akasa Air (demo option)", "QP-DMO3", "10:00", "11:55", "Direct service · Economy · seat subject to confirmation (illustrative details)"),
+        ]
+        for i, (provider, number, dep, arr, note) in enumerate(examples):
+            if len(same_price) >= 3:
+                break
+            alt_id = f"ALT-EQUAL-{booking['id']}-{i+1}"
+            if any(a.get("id") == alt_id for a in data["alternatives"]):
+                continue
+            data["alternatives"].append({"id":alt_id,"type":"flight","provider":provider,"service_name":f"{provider.split(' (')[0]} Flight {number}","service_number":number,"from":booking["from"],"to":booking["to"],"date":booking["date"],"departure":dep,"arrival":arr,"price":int(booking["price"]),"seats":5-i,"overnight":False,"note":note,"simulated":True})
+            same_price.append(data["alternatives"][-1])
+    elif booking["type"] == "train":
+        examples = [
+            ("Vande Bharat Express (demo option)", "VB-DMO1", "08:00", "11:10", "Chair Car · direct illustrative service"),
+            ("Shatabdi Express (demo option)", "SH-DMO2", "09:15", "12:30", "AC Chair Car · direct illustrative service"),
+            ("Rajdhani Express (demo option)", "RJ-DMO3", "10:20", "13:35", "AC class · illustrative service; route suitability must be verified"),
+        ]
+        for i, (provider, number, dep, arr, note) in enumerate(examples):
+            if len(same_price) >= 3:
+                break
+            alt_id = f"ALT-EQUAL-{booking['id']}-{i+1}"
+            if any(a.get("id") == alt_id for a in data["alternatives"]):
+                continue
+            data["alternatives"].append({"id":alt_id,"type":"train","provider":provider,"service_name":f"{provider.split(' (')[0]} {number}","service_number":number,"from":booking["from"],"to":booking["to"],"date":booking["date"],"departure":dep,"arrival":arr,"price":int(booking["price"]),"seats":8-i,"overnight":False,"note":note,"simulated":True})
+            same_price.append(data["alternatives"][-1])
     else:
-        for i, (provider, offset, checkin, seats) in enumerate([
-            ("DemoStay Central", 400, "15:00", 8),
-            ("Value Rooms", -300, "18:00", 5),
-            ("Comfort Lodge", 700, "14:00", 3)
-        ]):
-            data["alternatives"].append({
-                "id": "ALT-GEN-" + uuid.uuid4().hex[:6].upper(), "type": "hotel",
-                "provider": provider, "city": booking["city"], "date": booking["date"],
-                "check_in": checkin, "check_out": "11:00",
-                "price": max(500, int(booking["price"]) + offset), "seats": seats,
-                "overnight": False, "note": "Simulated hotel alternative for this city; not live inventory."
-            })
+        examples = [
+            ("Taj Hotels (demo option)", "4-star illustrative room · breakfast subject to availability", "15:00", "11:00"),
+            ("Lemon Tree Hotels (demo option)", "Standard room · Wi-Fi (illustrative details)", "14:00", "11:00"),
+            ("Airbnb stay (demo option)", "Entire place · amenities and fees require verification", "16:00", "10:00"),
+        ]
+        for i, (provider, note, checkin, checkout) in enumerate(examples):
+            if len(same_price) >= 3:
+                break
+            alt_id = f"ALT-EQUAL-{booking['id']}-{i+1}"
+            if any(a.get("id") == alt_id for a in data["alternatives"]):
+                continue
+            data["alternatives"].append({"id":alt_id,"type":"hotel","provider":provider,"service_name":provider.replace(" (demo option)",""),"city":booking["city"],"date":booking["date"],"check_in":checkin,"check_out":checkout,"price":int(booking["price"]),"seats":5-i,"overnight":False,"note":note,"simulated":True})
+            same_price.append(data["alternatives"][-1])
 
 
 def score_alternatives(data, booking, constraints):
@@ -175,19 +199,20 @@ def score_alternatives(data, booking, constraints):
             if delay > tolerance:
                 continue
         # Lower score is better. Favors low additional cost, minimal delay, and available inventory.
-        score = max(extra, 0) * 0.55 + delay * 300 - min(int(alt.get("seats", 1)), 20) * 2
+        score = abs(extra) * 0.55 + delay * 300 - min(int(alt.get("seats", 1)), 20) * 2
         candidates.append({
             **alt,
             "extra_cost": extra,
             "arrival_delay_hours": round(delay, 2),
             "score": round(score, 2),
+            "price_match": int(alt["price"]) == int(booking["price"]),
             "reason": (
-                f"Within your additional budget (₹{max_extra:,}), "
+                ("Same price as your original booking. " if int(alt["price"]) == int(booking["price"]) else f"Within your additional budget (₹{max_extra:,}). ")
                 + (f"arrival delay is {round(delay, 2)} hour(s), " if booking["type"] in ("flight", "train") else "")
                 + f"and {alt.get('seats', 0)} slot(s) are available."
             )
         })
-    return sorted(candidates, key=lambda item: item["score"])
+    return sorted(candidates, key=lambda item: (not item["price_match"], item["score"]))
 
 
 @app.route("/")
@@ -291,7 +316,7 @@ def recover(disruption_id):
             "booking_id": booking["id"],
             "booking_type": booking["type"],
             "original": booking,
-            "alternatives": options[:3],
+            "alternatives": options[:5],
             "recommended": chosen,
             "action_required": (
                 f"Review and confirm {chosen['provider']} option" if chosen

@@ -53,7 +53,6 @@ python app.py
 ```
 
 Open **http://127.0.0.1:5000** in your browser.
-Demo **https://wayfinde-ai.onrender.com**
 
 ## Suggested demo script (2–3 minutes)
 
@@ -109,7 +108,7 @@ travel_recovery_agent/
 ├── requirements.txt
 ├── README.md
 ├── data/
-│   └── demo_data.json       
+│   └── demo_data.json       # created automatically on first run
 ├── static/
 │   ├── app.js
 │   └── style.css
